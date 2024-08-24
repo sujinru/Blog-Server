@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 
 from component import db, Platform, User, Blog, UserPlatform
+from logger import logger
 
 def create_app():
     app = Flask(__name__, static_folder='static')
@@ -13,11 +14,13 @@ def create_app():
 
     @app.route('/blog', methods=['POST'])
     def create_blog():
+        logger.info('Attempting to create a new blog post')
         data = request.json
 
         # Check if the author exists
         author = User.query.get(data['authorid'])
         if not author:
+            logger.warning(f'Author not found for id: {data["authorid"]}')
             return jsonify({'error': 'Author not found'}), 404
 
         new_blog = Blog(
@@ -32,6 +35,7 @@ def create_app():
         db.session.add(new_blog)
         db.session.commit()
 
+        logger.info(f'Blog created successfully: {new_blog.blogid}')
         return jsonify({
             'message': 'Blog created successfully',
             'blogid': new_blog.blogid,
@@ -88,14 +92,16 @@ def create_app():
     @app.route('/')
     def serve_ui():
         try:
+            logger.info('Serving UI')
             return send_from_directory(app.static_folder, 'index.html')
         except Exception as e:
-            app.logger.error(f"Error serving UI: {str(e)}")
+            logger.error(f"Error serving UI: {str(e)}")
             return f"Error serving UI: {str(e)}", 500
 
     # Add this new route for debugging
     @app.route('/debug')
     def debug_info():
+        logger.debug('Accessing debug info')
         static_folder = app.static_folder
         index_path = os.path.join(static_folder, 'index.html')
         return {
@@ -119,4 +125,5 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
+    logger.info('Starting the Flask application')
     app.run(host='0.0.0.0', port=5000, debug=True)
