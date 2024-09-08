@@ -36,8 +36,17 @@ class User(db.Model):
     firstname = db.Column(db.String(255))
     lastname = db.Column(db.String(255))
     role = db.Column(db.String(50), nullable=False)
-    datecreated = db.Column(db.Date, nullable=False, default=datetime.utcnow())
-    datemodified = db.Column(db.Date, nullable=False, default=datetime.utcnow(), onupdate=datetime.utcnow())
+    datecreated = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    datemodified = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __init__(self, userid, username, password, role, email=None, firstname=None, lastname=None):
+        self.userid = userid
+        self.username = username
+        self.password = password
+        self.role = role
+        self.email = email
+        self.firstname = firstname
+        self.lastname = lastname
 
 
 class Blog(db.Model):

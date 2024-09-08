@@ -17,16 +17,33 @@ def create_app():
         logger.info('Attempting to create a new blog post')
         data = request.json
 
-        # Check if the author exists
-        author = User.query.get(data['authorid'])
+        # Validate authorid
+        try:
+            authorid = int(data['authorid'])
+            if authorid < 0:
+                raise ValueError("Author ID must be a non-negative integer")
+        except (ValueError, KeyError):
+            logger.warning(f'Invalid authorid: {data.get("authorid")}')
+            return jsonify({'error': 'Invalid author ID. Must be a non-negative integer.'}), 400
+
+        # Check if the author exists, if not, create a new user
+        author = User.query.get(authorid)
         if not author:
-            logger.warning(f'Author not found for id: {data["authorid"]}')
-            return jsonify({'error': 'Author not found'}), 404
+            logger.info(f'Author not found for id: {authorid}. Creating new user.')
+            new_user = User(
+                userid=authorid,
+                username=f'user_{authorid}',  # Generate a default username
+                password='default_password',  # You might want to generate a random password
+                role='user'
+            )
+            db.session.add(new_user)
+            db.session.flush()  # This assigns the ID to the new_user object
+            author = new_user
 
         new_blog = Blog(
             title=data['title'],
             content=data['content'],
-            authorid=data['authorid'],
+            authorid=author.userid,
             datecreated=datetime.utcnow(),
             datemodified=datetime.utcnow(),
             isdeleted=False
